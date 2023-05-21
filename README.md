@@ -8,7 +8,7 @@ In this workshop, you've been building your own personal portfolio Flutter web a
 
 ### What is Firebase? 
 
-![Firebase](images/img1.png)
+![Firebase](img1.png)
 
 [Firebase](https://firebase.google.com/) is an app development platform that helps you build and grow apps and games users love. It is backed by the Google Cloud and trusted by millions of businesses around the world, and it contains a suite of products for building robust mobile and web apps that can scale to billions of users.
 
