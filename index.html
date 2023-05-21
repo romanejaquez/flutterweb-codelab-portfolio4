@@ -1,0 +1,676 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Flutter Web Codelab (pt.4) - Firebase Integration: Cloud Firestore / Firebase Hosting</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements-tmp/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="flutter-web-codelab-riverpod4"
+                  title="Flutter Web Codelab (pt.4) - Firebase Integration: Cloud Firestore / Firebase Hosting"
+                  environment="web"
+                  feedback-link="https://romanjustcodes.web.app">
+    
+      <google-codelab-step label="Overview" duration="0">
+        <p>Welcome to the exciting world of Flutter Web!</p>
+<p>In this workshop, you&#39;ve been building your own personal portfolio Flutter web app, with hard-coded data. In a real-life scenario, you might want to pull the data that feeds your portfolio web app from an external source (like a backend service, or a database) and that&#39;s where Firebase comes in!</p>
+<h2 is-upgraded>What is Firebase?</h2>
+<p class="image-container"><img alt="Firebase" src="img/2fa3bd780bd12c1b.png"></p>
+<p><a href="https://firebase.google.com/" target="_blank">Firebase</a> is an app development platform that helps you build and grow apps and games users love. It is backed by the Google Cloud and trusted by millions of businesses around the world, and it contains a suite of products for building robust mobile and web apps that can scale to billions of users.</p>
+<p>In this session we&#39;ll be using <a href="https://firebase.google.com/products/firestore" target="_blank">Firebase Cloud Firestore</a>, a NoSQL document database that lets you easily store, sync, and query data for your mobile and web apps - at global scale. One of its best features is its serverless nature, in which you can stand up a Firebase backend without provisioning your own servers. You can access Cloud Firestore with traditional client libraries such as Node, Python, Go and Java, and in this codelab we&#39;ll access it via Dart through the <a href="https://firebase.flutter.dev/" target="_blank">FlutterFire</a> library.</p>
+<p>We will be working on the <strong>Free-Tier</strong> of Firebase (Spark - No cost $0/month) and you can see the full plan details and the decent quotas you get under this tier, which is enough to get started, by clicking on <a href="https://firebase.google.com/pricing?authuser=9&hl=en" target="_blank">this link</a>.</p>
+<h2 is-upgraded>Firebase Data Model: Quick Overview</h2>
+<p>Unlike a SQL database, there are no tables or rows. Instead, you store data in documents, which are organized into collections.</p>
+<p class="image-container"><img alt="Firebase" src="img/f1f8a08ba0f3804c.png"></p>
+<p>Each document contains a set of key-value pairs. Cloud Firestore is optimized for storing large collections of small documents.</p>
+<p>All documents must be stored in <strong>collections</strong>. Documents can contain subcollections and nested objects, both of which can include primitive fields like strings or complex objects like lists.</p>
+<h2 is-upgraded>Documents</h2>
+<p>In Cloud Firestore, the unit of storage is the <strong>document</strong>. A document is a lightweight record that contains fields, which map to values. Each document is identified by a name.</p>
+<p class="image-container"><img alt="Firebase" src="img/76ffb1fbec36bc3f.png"></p>
+<h2 is-upgraded>Collections</h2>
+<p><strong>Documents</strong> live in <strong>collections</strong>, which are simply containers for documents. For example, you could have a products collection to contain your various products, each represented by a document:</p>
+<p class="image-container"><img alt="Firebase" src="img/79ee35b5a4f5165d.png"></p>
+<p>Cloud Firestore is <strong>schemaless</strong>, so you have complete freedom over what fields you put in each document and what data types you store in those fields. Documents within the same collection can all contain different fields or store different types of data in those fields. However, it&#39;s a good idea to use the same fields and data types across multiple documents, so that you can query the documents more easily.</p>
+<p>In Firestore is how we will store the data that will power our application.</p>
+<h2 is-upgraded>Pulling Data from Firebase Cloud Firestore</h2>
+<p>There are three ways to retrieve data stored in Cloud Firestore. Any of these methods can be used with documents, collections of documents, or the results of queries:</p>
+<ul>
+<li>Call a method to get the data once: we will use this to display the initial data from our data store.</li>
+<li>Set a listener to receive data-change events: we will use this to respond to updates to our data so we keep the application in sync with the backend.</li>
+<li>Bulk-load Firestore snapshot data from an external source via data bundles. We will not touch this approach in this session, but feel free to explore <a href="https://firebase.google.com/docs/firestore/bundles" target="_blank">this feature</a> on your own.</li>
+</ul>
+<p>When you set a listener, Cloud Firestore sends your listener an initial snapshot of the data, and then another snapshot each time the document changes.</p>
+<p>In this session, we&#39;ll be exploring the simplest case, which is calling a method to get the data once, but definitely we&#39;d recommend exploring the real-time capabilities of Cloud Firestore since it&#39;s one of their most highlighted features.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Setup Firebase Cloud Firestore" duration="0">
+        <p>In this section we&#39;ll create a Firebase project, and we&#39;ll create our first Cloud Firestore database and create the collection of documents that will power our portfolio web app.</p>
+<p>Let&#39;s start by navigating to the Firebase Console by clicking on <a href="https://console.firebase.google.com/" target="_blank">this link</a>. Use a valid Gmail account, preferably one that you haven&#39;t used before for setting up Google Cloud or Firebase, and with no billing accounts attached to it. Remember this Gmail account for later steps in this workshop.</p>
+<p>Create your first project by clicking on the <strong>Create a Project</strong> button:</p>
+<p class="image-container"><img alt="Firebase" src="img/960841609bccd697.png"></p>
+<p>In the wizard, provide a name for your project, and accept the terms by checking the checkboxes (if shown):</p>
+<p class="image-container"><img alt="Firebase" src="img/6838ae3854010658.png"></p>
+<p>In the next step, disable Google Analytics as we don&#39;t need it for this project (you can enable later if needed). Then, click on <strong>Create Project</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/994b839540d201ef.png"></p>
+<p>Wait until the project gets created (this may take a few seconds):</p>
+<p class="image-container"><img alt="Firebase" src="img/84a2bff52cd67826.png"></p>
+<p>Once completed, you should get the following message that your project is ready. Click <strong>Continue</strong> to proceed:</p>
+<p class="image-container"><img alt="Firebase" src="img/6d6d34f5e703836a.png"></p>
+<p>You&#39;ve landed at the home page of the <strong>Firebase Console</strong>, where you can see all features in Firebase at your disposal. We&#39;ll focus on <strong>Firebase Cloud Firestore</strong> for now, so in the left navigation menu, under <strong>Build</strong>, click on <strong>Firestore Database</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/dbb4f24a98ffd930.png"></p>
+<p>In the <strong>Cloud Firestore</strong> landing page, click on <strong>Create database</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/d4c904071b826a41.png"></p>
+<p>On the first step of the database creation wizard, select to <strong>Start in test mode</strong>, which will lower the security rules on the database so we can set it up quickly (this last 30 days, so make sure to update your security rules after a month). Click <strong>Next</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/a870db3705785989.png"></p>
+<p>Next step deals with the location of the Cloud Firestore database. Pick a multi-regional location for increased availability - you can keep the default <strong>nam5 (United States)</strong> if you want. Click <strong>Enable</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/84c75ab5bd33c61.png"></p>
+<p>Wait a few seconds until your database is provisioned in the Google Cloud:</p>
+<p class="image-container"><img alt="Firebase" src="img/16dd3453b7a7ef91.png"></p>
+<p>We&#39;ve landed on our Cloud Firestore database called <strong>roman-portfolio</strong>, after the name of the project. We must start now by creating a <strong>collection</strong>, which will be the container for our documents. Create your first collection by clicking on the <strong>Start collection</strong> button:</p>
+<p class="image-container"><img alt="Firebase" src="img/d5cb7c83acebe770.png"></p>
+<p>Assign a unique ID to our collection - let&#39;s call it <strong>pageContent</strong> as this collection will hold all our page content; click &#34;Next&#34;:</p>
+<p><a href="images/img12.png" target="_blank">Firebase</a></p>
+<p>With our <strong>pageContent</strong> collection created, you can proceed to start adding documents. Let&#39;s add a first document to this collection. You can either assign it your own ID, or use the Auto-ID option, but in our case, each document in this collection should correspond to a Flutter page from our web app. Add the ID <strong>welcomePage</strong> since we&#39;ll be building the content for our welcome page, and the following fields:</p>
+<ul>
+<li><strong>name</strong>: (type string) Roman (best if you put your name here!)</li>
+<li><strong>title</strong>: (type string) Flutter GDE (or your own title!)</li>
+<li><strong>subTitle</strong>: (type string) Certified Cloud Architect (or your own subtitle)</li>
+<li><strong>imgPath</strong>: (type string) https://avatars.githubusercontent.com/u/5081804?s=400&amp;u=04dc8bfa749d69165ab08ffba89edd5f095ba21d&amp;v=4 (or your own image hosted somewhere)</li>
+<li><strong>greetings</strong>: (type array) and add the following values (or whatever): <ul>
+<li>‘Hello&#39;, ‘Hola&#39;, ‘Bonjour&#39;, ‘Olá&#39;, ‘Ciao&#39;, ‘Namaste&#39;, ‘Kon&#39;nichiwa&#39;</li>
+</ul>
+</li>
+</ul>
+<p>Your document should look like below. Click <strong>Save</strong> when ready:</p>
+<p class="image-container"><img alt="Firebase" src="img/ba98e0baf2ffc8a6.png"></p>
+<p class="image-container"><img alt="Firebase" src="img/bac63948e33d08a8.png"></p>
+<p>After saving, your document-collection structure should look like this (please ensure this is the case):</p>
+<p class="image-container"><img alt="Firebase" src="img/31294209de1b2505.png"></p>
+<p>Awesome! With our database fully setup and loaded with data, let&#39;s go back to Flutter to connect it to this newly created Cloud Firestore database!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Set up FlutterFire on our Flutter Project" duration="0">
+        <p>With the Firebase project created and our Firestore database loaded and hosted in the Google Cloud, we need a way to connect to it to retrieve the data stored through our Flutter Web App. For that, we&#39;ll need <a href="https://firebase.flutter.dev/" target="_blank"><strong>FlutterFire</strong></a>.</p>
+<p><a href="https://firebase.flutter.dev/" target="_blank"><strong>FlutterFire</strong></a> is a set of Flutter plugins which connect your Flutter application to Firebase.</p>
+<p>First, we need to set up the <strong>FlutterFire CLI</strong>, which is a useful tool which provides commands to help ease the installation process of FlutterFire across all supported platforms.</p>
+<h2 is-upgraded>Installing the FlutterFire CLI</h2>
+<p>Let&#39;s install it first.</p>
+<p>The FlutterFire CLI depends on the underlying <a href="https://firebase.google.com/docs/cli" target="_blank">Firebase CLI</a>. If you haven&#39;t already done so, make sure you have the Firebase CLI installed on your machine. Also make sure you have <a href="https://www.nodejs.org/" target="_blank">node.js</a> on your machine and Install the Firebase CLI via npm by running the following command:</p>
+<pre><code language="language-flutter" class="language-flutter">npm install -g firebase-tools
+
+</code></pre>
+<p>Next, install the FlutterFire CLI by running the following command:</p>
+<pre><code language="language-flutter" class="language-flutter">dart pub global activate flutterfire_cli
+
+</code></pre>
+<p>After running the above command, you will either have to add the FlutterFire executables to your PATH, or you can run the following command right after, since the next set of commands will depend on FlutterFire being on the PATH (at least for the current session):</p>
+<h2 is-upgraded>FOR MAC:</h2>
+<pre><code language="language-flutter" class="language-flutter">export PATH=&#34;$PATH&#34;:&#34;$HOME/.pub-cache/bin&#34;
+
+</code></pre>
+<h2 is-upgraded>FOR WINDOWS:</h2>
+<pre><code language="language-flutter" class="language-flutter">set PATH=%PATH%;C:\Users\{Your_Username}\AppData\Local\Pub\Cache\bin
+
+</code></pre>
+<p>And you should be all set. Let&#39;s proceed with the rest of the setup.</p>
+<p>The FlutterFire CLI extracts information from your Firebase project and selected project applications to generate all the configuration for a specific platform.</p>
+<p>First, you <strong>must</strong> be logged in to your Firebase project via the Firebase CLI with <strong>THE SAME EMAIL YOU CREATED YOUR FIREBASE PROJECT WITH</strong>; confirm this by running the following command:</p>
+<pre><code language="language-flutter" class="language-flutter">firebase login
+
+</code></pre>
+<p class="image-container"><img alt="Firebase" src="img/8879a41152a705a8.png"></p>
+<p>You will get a prompt asking whether you want Firebase to collect usage - say no for now by typing ‘n&#39;:</p>
+<p>Then you&#39;ll be presented with the web authentication page for the Firebase CLI, where you must <strong>Allow</strong> firebase permissions to acces your Google Account:</p>
+<p class="image-container"><img alt="Firebase" src="img/479fa0371df20ee0.png"></p>
+<p>Close the browser window and come back to the command line, where you&#39;ll see the success message:</p>
+<p class="image-container"><img alt="Firebase" src="img/77f58d60edc0cc73.png"></p>
+<p>If none of that worked or you were previously logged in with a different Gmail account, just execute <code>firebase logout</code> then run the login workflow above again, and you should be good to go.</p>
+<p>In the root of your application, run the configure command:</p>
+<pre><code language="language-flutter" class="language-flutter">flutterfire configure
+
+</code></pre>
+<p>The configuration command will guide you through a number of processes:</p>
+<ul>
+<li>Fetches all Firebase projects under the account associated with the logged in user; in our case it fetched our <strong>roman-portfolio</strong> project. Pick it by using the keyboard arrow keys and press <strong>ENTER</strong>:</li>
+</ul>
+<p class="image-container"><img alt="Firebase" src="img/5500c2f1793ff3e1.png"></p>
+<p>Next prompt asks which platforms are you planning to support; in our case we&#39;ll only do <strong>web</strong> so use the <strong>SPACE BAR</strong> on your keyboard to add / remove selections; just keep the <strong>web</strong>. Then hit <strong>ENTER</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/2bbac1010a156232.png"></p>
+<p>After this step, your project will generate some boilerplate code, especially an important file called <strong>firebase_options.dart</strong> inside the <strong>lib</strong> folder. This <strong>.dart</strong> file contains all the required configuration and connection strings to be able to connect to your Firebase project and thus all the services you have enabled there - in our case, the Firebase Cloud Firestore database we set up earlier.</p>
+<p>The auto-generated file (<strong>firebase_options.dart</strong>) we&#39;ll place it in a more logical location. Create a folder inside <strong>lib/shared</strong> called <strong>repositories</strong> and drag it inside. We&#39;ll deal with it later.</p>
+<h2 is-upgraded>Import the Firebase Core packages</h2>
+<p>Next, let&#39;s import some required packages that facilitate the communication to Firebase from Flutter.</p>
+<p>Before any Firebase services can be used, you must first install the <strong>firebase_core</strong> plugin, which is responsible for connecting your application to Firebase.</p>
+<p>Install the plugin by running the following command from the project root:</p>
+<pre><code language="language-flutter" class="language-flutter">flutter pub add firebase_core
+
+</code></pre>
+<h2 is-upgraded>Initialize Firebase</h2>
+<p>Next the generated options need to be provided to the initializeApp method. Since this is an asynchronous operation, the main function can be modified to ensure initialization is complete before running the application.</p>
+<p>First import the <strong>firebase_core</strong> plugin and generated <strong>firebase_options.dart</strong> file in your <strong>main.dart</strong> file as follows:</p>
+<pre><code language="language-flutter" class="language-flutter">//... in the lib/main.dart, at the top of the file:
+//... rest of the imports omitted for brevity
+
+import &#39;package:firebase_core/firebase_core.dart&#39;;
+
+// make sure to import the auto-generated file from shared/repositores
+import &#39;package:roman_web_portfolio/shared/repositories/firebase_options.dart&#39;;
+
+</code></pre>
+<p>Next, within the <strong>main</strong> function, ensure <strong>WidgetsFlutterBinding</strong> is initialized and then initialize Firebase, all before the <strong>runApp</strong> method. <strong>DO NOT FORGET TO ADD THE ASYNC KEYWORD TO THE MAIN METHOD</strong> since this is an async call. Copy / paste the necessary information and leave the <strong>runApp</strong> as-is:</p>
+<pre><code language="language-flutter" class="language-flutter">// ... updated main() method in the main.dart 
+
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // YOUR RUNAPP METHOD GOES HERE... 
+  // runApp(...)
+}
+
+
+</code></pre>
+<p>And this is how the updated <strong>main</strong> method will look like with the rest of the code (do not copy - just confirm it looks like it):</p>
+<p class="image-container"><img alt="Firebase" src="img/6c0c3cf33c83e562.png"></p>
+<p>On its own, the <strong>firebase_core</strong> plugin provides basic functionality for usage with Firebase. FlutterFire is broken down into individual, installable plugins that allow you to integrate with a specific Firebase service. Let&#39;s install the plugin for connecting to our Firebase Cloud Firestore database.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Install the Cloud Firestore Plugin" duration="0">
+        <p>Before proceeding with this step, make sure that <strong>firebase_core</strong> is installed and Firebase initialized, therefore make sure the previous step is complete.</p>
+<h2 is-upgraded>Add dependency</h2>
+<p>On the root of your Flutter project, run the following command to install the plugin:</p>
+<pre><code language="language-flutter" class="language-flutter">flutter pub add cloud_firestore
+
+</code></pre>
+<h2 is-upgraded>Rebuild your app</h2>
+<p>Once complete, rebuild your Flutter application:</p>
+<pre><code language="language-flutter" class="language-flutter">flutter run -d chrome
+
+</code></pre>
+<p>With that set up, let&#39;s now start pulling data from Firestore by tapping into the available API, but first let&#39;s assemble the required plumbing to achieve so.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create the DB Infrastructure" duration="0">
+        <p>Let&#39;s create some files that will support the retrieval of data from an external source, not just necessarily from Firebase, but in our case we may make it a bit coupled to Firebase since it will be our main way to retrieve its data, but at least we&#39;ll make it so we can have the ability to mock it and make it testable down the road.</p>
+<h2 is-upgraded>Create enums for the documents and collections</h2>
+<p>This part you can do it any way you deem appropriate; I like using enum values instead of hard-coded strings, so I will create two enums: one for the names of collections (<strong>DatabaseCollections</strong>) and another one for the names of the documents (the data envelopes) (<strong>DatabaseDocs</strong>). Go to the <strong>lib/helpers/enums.dart</strong> file and add the following enumerations:</p>
+<pre><code language="language-dart" class="language-dart">// inside the enums.dart
+// other enums omitted for brevity
+
+enum DatabaseCollections {
+  pageContent
+}
+
+enum DatabaseDocs {
+  welcomePage,
+  twitterPage,
+  linkedInPage,
+  githubPage,
+  webPage,
+}
+
+</code></pre>
+<p>Each enum will represent the name with which we&#39;ll retrieve the corresponding collection and document from Firestore respectively.</p>
+<p>Let&#39;s do some refactoring to the <strong>WelcomePageModel</strong> since we want it to receive the data coming from Firestore and populate its properties accordingly.</p>
+<h2 is-upgraded>Refactor the WelcomePageModel</h2>
+<p>In the <strong>features/welcome/data/models/welcome_page.model.dart</strong> file, let&#39;s add a <strong>factory</strong> method for data mapping, as follows:</p>
+<pre><code language="language-dart" class="language-dart">// inside the welcome_page.model.dart
+// ... rest of the code omitted for brevity
+
+factory WelcomePageModel.fromDatabase(Map&lt;String, dynamic&gt; doc) {
+    return WelcomePageModel(
+        name: doc[&#39;name&#39;], 
+        title: doc[&#39;title&#39;], 
+        subTitle: doc[&#39;subTitle&#39;], 
+        imgPath: doc[&#39;imgPath&#39;], 
+        greetings: (doc[&#39;greetings&#39;] as List&lt;dynamic&gt;).map((e) =&gt; e.toString()).toList()
+    ); 
+}
+
+
+</code></pre>
+<p>Notice that the factory method <strong>fromDatabase()</strong>&#39;s only job is to receive the incoming data from Firestore and map it to the corresponding properties of this model - simple as that. We&#39;ll invoke this once we fetch the data from the db, but see that we receive it as a <strong>Map</strong>, meaning it could also be from another source other than Firebase.</p>
+<p>Let&#39;s do some data fetching now!</p>
+<h2 is-upgraded>Fetch the data from Firestore</h2>
+<p>Inside the <strong>shared/repositories</strong> folder, let&#39;s add an interface that will stand as the contract that any entity wanting to fetch data from a database to populate our pages should follow. Create a file called <strong>idb_provider.dart</strong> and add the following class (along with required imports):</p>
+<pre><code language="language-dart" class="language-dart">abstract class IDBProvider {
+
+  Future&lt;T&gt; getPageDataFromDB&lt;T&gt;(
+    Function dataParseFunc,
+    String collectionName,
+    String docName
+  );
+}
+
+</code></pre>
+<p>Notice how we are using <a href="https://dart.dev/language/generics" target="_blank">Generics</a> from Dart to reduce code duplication. We are creating a contract for an implementing class to return a Future of type <strong>T</strong> (the <strong>T</strong> will be any of our page models), also it will take a function reference that will be used to parse the data (the <strong>fromDatabase()</strong> method), as well as receive the corresponding collection name (from the  <strong>DatabaseCollections</strong> enum) and document name (from the <strong>DatabaseDocs</strong> enums).</p>
+<p>Create a corresponding implementing class in the same folder (<strong>shared/repositories</strong>) called <strong>DatabaseProvider</strong> inside a file called <strong>database_provider.dart</strong> and implement the interface above; your code should look like this:</p>
+<pre><code language="language-dart" class="language-dart">class DatabaseProvider implements IDBProvider {
+
+  final Ref ref;
+  DatabaseProvider(this.ref);
+  
+  @override
+  Future&lt;T&gt; getPageDataFromDB&lt;T&gt;(Function dataParseFunc, String collectionName, String docName) {
+    Completer&lt;T&gt; pageCompleter = Completer();
+    var db = ref.read(firebaseDbInstanceProvider);
+    
+    db.collection(collectionName)
+      .doc(docName).get()
+      .then((pageDoc) {
+        
+        T pageDocData = dataParseFunc(pageDoc.data() as Map&lt;String, dynamic&gt;) as T;
+        pageCompleter.complete(pageDocData);
+
+      }).catchError((error) {
+        pageCompleter.completeError(error);
+      }).onError((error, stackTrace) {
+        pageCompleter.completeError(error!);
+      });
+
+    return pageCompleter.future;
+  }
+}
+
+</code></pre>
+<p>Notice how this class implements a <strong><em>constructor</em></strong> that takes in a <strong>Ref</strong> instance. We&#39;ll refer to this later, but so far so good.</p>
+<p>Let&#39;s dissect the code.</p>
+<p>First, we create a <strong>Completer</strong> so we can return a <strong>Future</strong> instance of type <strong>T</strong> while the operation is in play - we could introduce a small delay to improve the user experience and see the spinner for a bit.</p>
+<p>Then we use the <strong>ref</strong> instance to read the <strong>firebaseDbInstanceProvider</strong> which fetches a Firestore instance for us.</p>
+<p>Out of this instance, we call the <strong>db.collection</strong> using the <strong>collectionName</strong> parameter from the <strong>DatabaseCollections</strong> enum (i.e. <strong>DatabaseCollections.pageContent.name</strong>) as the name of the collection in Firestore, followed by a call to the document we&#39;re interested in (i.e. the one we created earlier in the Firebase Console - <strong>welcomePage</strong> from the <strong>DatabaseDocs</strong> enum).</p>
+<p>We invoke the <strong>get()</strong> method to return a <strong>Future</strong> to which we hook up a promise using the <strong>.then()</strong> chain method, so we can receive a <strong>DocumentSnapshot</strong> instance asynchronously.</p>
+<p>Inside the <strong>.then()</strong> callback, the received document snapshot instance (a <strong>DocumentSnapshot</strong> called <strong>pageDoc</strong>) gets processed through a function pointer or callback (<strong>dataParseFunc</strong>) whose job will be to take the call to <strong>data()</strong>, which spits out a <strong>Map&lt;String, dynamic&gt;</strong>, and return an instance of <strong>T</strong>.</p>
+<p>Our newly populated <strong>T</strong> instance is fed into the <strong>Completer</strong>, so whoever is listening on the future returned earlier, now will be notified.</p>
+<p>Notice how we are also catching errors and returning it via the same completer by using the available <strong>completeError</strong> method available in the completer. In the event of an error, the UI will process it in the <strong>error</strong> condition of the FutureProvider instance being used.</p>
+<p>Now that we have these pieces in place, let&#39;s bring in some of the providers that will feed our Firebase Firestore instance. Go to the <strong>lib/shared/providers</strong> folder, and inside the <strong>shared_providers.dart</strong> file, add the following providers (with required imports):</p>
+<pre><code language="language-dart" class="language-dart">// inside the shared_providers.dart
+// rest of the code omitted
+
+final firebaseDbInstanceProvider = Provider&lt;FirebaseFirestore&gt;((ref) {
+  return FirebaseFirestore.instance;
+});
+
+final dbProvider = Provider&lt;IDBProvider&gt;((ref) {
+  return DatabaseProvider(ref);
+});
+
+</code></pre>
+<p>First, we create a provider that wraps an instance of <strong>FirebaseFirestore.instance</strong>; this way we can mock it up in the future and inject it as a dependency anywhere else where <strong>ref</strong> can be accessed - just like any other provider.</p>
+<p>Second, we create an instance of <strong>IDBProvider</strong> - in our case, a concrete implemention of it, thanks to the <strong>DatabaseProvider</strong>, and see how we&#39;re injecting the <strong>ref</strong> instance supplied to the wrapping provider - we&#39;ll use it to internally fetch an instance of Firestore. By following this approach we can replace it with mocked versions for testing.</p>
+<p>OK, so now where do we plug this code in?</p>
+<p>Let&#39;s continue with the refactoring!</p>
+<h2 is-upgraded>Replace the mocked data by real data</h2>
+<p>Remember how we are currently using the <strong>MockWelcomeRepository</strong> repository to feed synthetic welcome data to our page? Well, check this out now!</p>
+<p>Go go the <strong>features/welcome/data/repositories/welcome.repository.dart</strong> and add the following code (with the proper imports):</p>
+<pre><code language="language-dart" class="language-dart">class WelcomeRepository implements IWelcomeRepository {
+
+  final Ref ref;
+
+  WelcomeRepository(this.ref);
+  
+  @override
+  Future&lt;WelcomePageModel&gt; getWelcomePageData() {
+
+    return ref.read(dbProvider).getPageDataFromDB(
+      WelcomePageModel.fromDatabase,
+      DatabaseCollections.pageContent.name, 
+      DatabaseDocs.welcomePage.name
+    );
+  }
+}
+
+</code></pre>
+<p>See how now we are ready to use a concrete implementation of welcome data repository that will fetch us real data from the database. We use the injected <strong>ref</strong> instance and call the <strong>dbProvider</strong> provider, which implements the method <strong>getPageDataFromDB()</strong>, and since this returns a future as well, we just pass it right through for any interested entities to handle it accordingly down the line.</p>
+<p>Now go to the <strong>features/welcome/presentation/providers/welcome_page.providers.dart</strong> and in the <strong>welcomeRepositoryProvider</strong>, replace the mock version by the newly added actual implementation, as such:</p>
+<pre><code language="language-dart" class="language-dart">final welcomeRepositoryProvider = Provider&lt;IWelcomeRepository&gt;((ref) {
+  return WelcomeRepository(ref);
+});
+
+</code></pre>
+<p>Rebuild the app and take it for a spin. After reloading the app, you will see now the data you put in the Firestore database come through and get displayed in the UI. But did you even see us touch the UI at all? That&#39;s how well architected this app is becoming - we were able to swap just the mock implementation by the actual implementation and the app just continued working as normal. Don&#39;t you love well-architected apps? Me too!</p>
+<p class="image-container"><img alt="Firebase" src="img/26eaafa821a9fcfa.gif"></p>
+<p>The cool thing is that you hardly notice the difference, and another cool thing is that the data gets cached - one of the benefits of Riverpod!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Your Challenge: Populate the data for the rest of the pages" duration="0">
+        <p>Your challenge would be to go to the <a href="http://console.firebase.google.com/" target="_blank">Firebase Console</a> and create a separate document for each of the pages, under the existing collection called <strong>pageContent</strong>:</p>
+<ul>
+<li>Create a document called <strong>twitterPage</strong> containing the corresponding content to feed the Twitter page (use the mocked content):</li>
+</ul>
+<p class="image-container"><img alt="Firebase" src="img/33cb2d36b4f038d2.png"></p>
+<ul>
+<li>Create a document called <strong>linkedInPage</strong> containing the corresponding content to feed the LinkedIn page (use the mocked content):</li>
+</ul>
+<p class="image-container"><img alt="Firebase" src="img/904ea4c306f3e895.png"></p>
+<ul>
+<li>Create a document called <strong>githubPage</strong> containing the corresponding content to feed the Github page (use the mocked content):</li>
+</ul>
+<p class="image-container"><img alt="Firebase" src="img/d2acaba0191ba04e.png"></p>
+<ul>
+<li>Create a document called <strong>webPage</strong> containing the corresponding content to feed the Web page (use the mocked content):</li>
+</ul>
+<p class="image-container"><img alt="Firebase" src="img/1d03061f5310a9b1.png"></p>
+<h2 is-upgraded>Refactor each page model to add its corresponding fromDatabase factory method</h2>
+<p>Make sure to go to each page model (LinkedInPageModel, WebPageModel, GithubPageModel, TwitterPageModel) and create the factory method <strong>fromDatabase()</strong> that takes in a <strong>Map</strong> of &lt;<strong>String</strong>, <strong>dynamic</strong>&gt; coming from Firestore, used to map each key-value pair to its corresponding properties.</p>
+<p>Note: In order to map the <strong>icon</strong> fields from Firestore from each of the corresponding page documents, the document model mapping would look something like this, using the existing <strong>PersonalPortfolioIcons.iconMap</strong> mapping:</p>
+<pre><code language="language-dart" class="language-dart">/// hint example using the WebPageModel model class:
+
+factory WebPageModel.fromDatabase(Map&lt;String, dynamic&gt; doc) {
+    return WebPageModel(
+        icon: PersonalPortfolioIcons.iconMap[doc[&#39;icon&#39;]]!, // &lt;-- we feed the doc[&#39;icon&#39;] to the map
+        title: doc[&#39;title&#39;],
+        subTitle: doc[&#39;subTitle&#39;],
+        url: doc[&#39;url&#39;]
+    );
+}
+
+</code></pre>
+<h2 is-upgraded>Create the corresponding repositories</h2>
+<p>Make sure each feature&#39;s actual repository is getting the <strong>ref</strong> instance injected, and inside you call the corresponding <strong>ref.read(dbProvider).getPageDataFromDB()</strong>, as well as pass the appropriate parameters per page. Follow the same implementation as in the welcome page repository; replace the mock repositories by the actual repositories once complete, and you should be good to go.</p>
+<p>Here&#39;s a hint (i.e. for the WebPageRepository):</p>
+<pre><code language="language-dart" class="language-dart">@override
+Future&lt;WebPageModel&gt; getWebPageData() {
+    return ref.read(dbProvider).getPageDataFromDB(
+        WebPageModel.fromDatabase,
+        DatabaseCollections.pageContent.name,
+        DatabaseDocs.webPage.name
+    );
+}
+
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="BONUS #1: Preload Page Content during the Splash Screen" duration="0">
+        <p>You may have noticed that upon navigating to either one of the pages, it still takes a a bit over a second to fetch the data for each of the pages. Once the data is retrieved, Riverpod caches it internally for later use. If you fetch the data again (before the provider gets disposed), a new network request is not actually made - Riverpod just pulls it from its internal cache.</p>
+<p>So let&#39;s try preloading all the data upfront (during the spinner in the splash screen), that way by the time we enter the app, all data will already be cached and the experience will be much smoother.</p>
+<h2 is-upgraded>Creating the infrastructure to fetch all data upfront</h2>
+<p>Since we will preload the data from the splash screen, let&#39;s create a viewmodel that will encapsulate this logic.</p>
+<p>Go to the <strong>features/splash/presentation</strong> and create a new subfolder called <strong>viewmodels</strong>; add a file called <strong>splash_page.viewmodel.dart</strong>. Add the following code:</p>
+<pre><code language="language-dart" class="language-dart">class SplashPageViewModel {
+
+  final Ref ref;
+  
+  SplashPageViewModel(this.ref);
+
+  Future&lt;bool&gt; preloadPages() {
+    Completer&lt;bool&gt; preloadCompleter = Completer();
+
+    // rest of the code goes here...
+
+    return preloadCompleter.future;
+  }
+}
+
+</code></pre>
+<p>We create a new viewmodel class called <strong>SplashPageViewModel</strong> with a method called <strong>preloadPages()</strong>, which returns a Future of type <strong>bool</strong> thanks to a <strong>Completer</strong>, since what we want to do is wait (that&#39;s the hint!) for all pages&#39; Futures to return, and if successful, we return true or false accordingly.</p>
+<p>How do we wait for all pages&#39; Futures? By using <a href="https://api.flutter.dev/flutter/dart-async/Future/wait.html" target="_blank"><strong>Future.wait</strong></a>, passing the list of all pages&#39; Futures and just waiting for their completion.</p>
+<p>Add the following code before the return statement of the <strong>preloadPages()</strong> method (add the required imports):</p>
+<pre><code language="language-dart" class="language-dart">  // wait for all pages&#39; futures to return 
+  Future.wait([
+    ref.read(welcomeProvider.future),
+    ref.read(twitterProvider.future),
+    ref.read(linkedInProvider.future),
+    ref.read(githubProvider.future),
+    ref.read(webpageProvider.future),
+  ]).then((value) {
+    preloadCompleter.complete(true);
+  }).catchError((error) {
+    preloadCompleter.completeError(error);
+  }).onError((error, stackTrace) {
+    preloadCompleter.completeError(error!);
+  });
+
+</code></pre>
+<p>What the above code will do is read each <strong>FutureProvider</strong>, hold on to its future, and wait for all of them to complete. If any of them fails, the whole operation fails - this is an atomic operation.</p>
+<p>If all of them succeed, we just complete the completer with <strong>true</strong> and go about our way. We don&#39;t need the <strong>value</strong> returned by the <strong>wait</strong>, which is a list of all the values that the futures produced, as the data is already cached in each corresponding provider.</p>
+<p>Let&#39;s now create providers around this implementation, so we can consume it from the splash page.</p>
+<h2 is-upgraded>Create the corresponding providers for the SplashPageViewModel</h2>
+<p>Inside the <strong>splash</strong> feature, under <strong>presentation</strong>, create a new sub-folder called <strong>providers</strong>; add a file called <strong>splash_page.providers.dart</strong> and add the following code (with required imports):</p>
+<pre><code language="language-dart" class="language-dart">final splashPageViewModelProvider = Provider((ref) {
+  return SplashPageViewModel(ref);
+});
+
+final splashPageFutureProvider = FutureProvider&lt;bool&gt;((ref) {
+  var splashVM = ref.read(splashPageViewModelProvider);
+  return splashVM.preloadPages();
+});
+
+</code></pre>
+<p>Notice how we create a regular Riverpod <strong>Provider</strong> to wrap the <strong>SplashPageViewModel</strong>, and in turn, we read it in a separate <strong>FutureProvider</strong> type <strong>bool</strong>, where we call the <strong>preloadPages()</strong> method. Now let&#39;s go to the UI and consume this.</p>
+<h2 is-upgraded>Reading the splashPageFutureProvider in the UI</h2>
+<p>With all of this in place, let&#39;s integrate this into the splash page.</p>
+<p>Go to the <strong>splash/presentation/pages/splash_page.dart</strong> file and let&#39;s do some refactoring:</p>
+<ul>
+<li>First, convert the <strong>SplashPage</strong> widget from a <strong>StatelessWidget</strong> to a <strong>ConsumerWidget</strong>, that way we get a <strong>WidgetRef</strong> through the <strong>build</strong> method.</li>
+</ul>
+<pre><code language="language-dart" class="language-dart">class SplashPage extends ConsumerWidget {
+
+  static const String route = &#39;/splash&#39;;
+  const SplashPage({super.key});
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    // rest of the code goes here...
+
+  }
+}
+
+</code></pre>
+<p>Inside the <strong>build</strong> method, add the following code (with the proper imports):</p>
+<pre><code language="language-dart" class="language-dart">// ... inside the build method:
+
+var splashFuture = ref.watch(splashPageFutureProvider);
+var loadingMessage = const SplashLoading(message: &#39;Loading an awesome,\nKick-ass Profile...&#39;);
+
+return Scaffold(
+  backgroundColor: PersonalPortfolioColors.mainBlue,
+  body: splashFuture.when(
+    loading: () =&gt; loadingMessage,
+    error:(error, stackTrace) =&gt; ErrorNotification(message: error.toString()),
+    data:(data) {
+      Future.delayed(1.seconds, () {
+        GoRouter.of(Utils.mainNav.currentContext!).go(WelcomePage.route);
+      });
+
+      return loadingMessage;
+    },
+  )
+);
+
+
+</code></pre>
+<p>Notice how we use the <strong>ref</strong> reference to watch the <strong>splashPageFutureProvider</strong>, and we tap into the <strong>.when()</strong> extension method to handle the usual <strong>loading</strong>, <strong>error</strong> and <strong>data</strong> callbacks through the returned <strong>AsyncValue</strong> from the FutureProvider.</p>
+<p>Inside the <strong>data</strong> callback, we simulate a 1-second delay thanks to the <strong>Future.delayed()</strong>, after which we navigate to the <strong>WelcomePage</strong> widget using the <strong>GoRouter</strong> instance, while returning the <strong>loadingMessage</strong> widget out of this method.</p>
+<p>The complete <strong>SplashPage</strong> class should look like this (do not copy if you did the above steps; this is just to confirm):</p>
+<pre><code language="language-dart" class="language-dart">class SplashPage extends ConsumerWidget {
+  static const String route = &#39;/splash&#39;;
+  const SplashPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    var splashFuture = ref.watch(splashPageFutureProvider);
+    var loadingMessage = const SplashLoading(message: &#39;Loading an awesome,\nKick-ass Profile...&#39;);
+
+    return Scaffold(
+      backgroundColor: PersonalPortfolioColors.mainBlue,
+      body: splashFuture.when(
+        loading: () =&gt; loadingMessage,
+        error:(error, stackTrace) =&gt; ErrorNotification(message: error.toString()),
+        data:(data) {
+          Future.delayed(1.seconds, () {
+            GoRouter.of(Utils.mainNav.currentContext!).go(WelcomePage.route);
+          });
+          return loadingMessage;
+        },
+      )
+    );
+  }
+}
+
+</code></pre>
+<p>NOTE: Again, this only works fine if the amount of data is not that large, in order to provide a smoother user experience than loading it upon navigating to that page, which in other circumstances would be the way to go, otherwise the user will be hung up on the splash screen waiting for all data to load when the data for all pages is not needed upfront as they may not even navigate to certain pages.</p>
+<p class="image-container"><img alt="Firebase" src="img/fb3c1f4c3b8e2191.gif"></p>
+<p>And that&#39;s preloading and caching data for you! Flutter and Dart provide nice utility methods such as <strong>Future.wait()</strong> for making parallel Future calls and wait for all of them, while Riverpod allows for the caching aspect of it.</p>
+<h2 is-upgraded>Additional Riverpod References</h2>
+<p>You can read up on a Riverpod feature called <a href="https://riverpod.dev/docs/concepts/modifiers/auto_dispose" target="_blank"><strong>autoDispose</strong></a> for cases where you do want to destry the state of a provider when no longer used, keeping the cached state alive for a period of time, and other scenarios.</p>
+<p>Proceed to the next bonus lab if you wish!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="BONUS #2: Firebase Hosting" duration="0">
+        <p>Now it&#39;s time to showcase your work to the world - by hosting your masterpiece on Firebase Hosting!</p>
+<p>The next set of steps will deal with <a href="https://firebase.google.com/docs/hosting" target="_blank">Firebase Hosting</a>. If you&#39;re ready, then hit <strong>Next</strong> to proceed!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Host your Flutter Web app on Firebase: Setup" duration="0">
+        <p>It&#39;s time to make our Flutter web app masterpiece available for the whole world to appreciate, by publishing it to <a href="https://firebase.google.com/docs/hosting" target="_blank">Firebase Hosting</a> - a production-grade web content hosting for developers. With a single command, you can quickly deploy web apps and serve both static and dynamic content to a global CDN (content delivery network).</p>
+<p>For this exercise, we will use both the <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>, a web-based GUI for managing your Firebase projects as well as the Firebase CLI (which you should&#39;ve installed on Step 3), which provides a set of command-line-based tools for managing, viewing and deploying to Firebase projects.</p>
+<h2 is-upgraded>Prerequisites: For the next steps must have NodeJS and NPM installed on your machine, as well as the <a href="https://firebase.google.com/docs/cli" target="_blank">Firebase CLI</a>.</h2>
+<p>If you haven&#39;t installed it, go ahead and run the following installation command:</p>
+<pre><code language="language-flutter" class="language-flutter">npm install -g firebase-tools
+
+</code></pre>
+<p>As before, after installing the CLI, you must authenticate. Run the following command:</p>
+<pre><code language="language-flutter" class="language-flutter">firebase login
+
+</code></pre>
+<p>If you&#39;re already logged in, that&#39;s fine, otherwise you must go through the authentication workflow (in Step 3) to be authenticated and allow the Firebase CLI to access your Google account.</p>
+<p>Once that&#39;s done, proceed to the next step.</p>
+<h2 is-upgraded>Initialize the Firebase Environment</h2>
+<p>Proceed to now to run the following command to initialize your current Flutter project as a Firebase environment:</p>
+<pre><code language="language-flutter" class="language-flutter">firebase init
+
+</code></pre>
+<p>This should present you with a series of prompts to properly configure the project; the first option is the Firebase feature you want to set up; in our case, select the <strong>Hosting: Configure files for Firebase Hosting and (optionally) set up Github Action deploys</strong> option:</p>
+<p class="image-container"><img alt="Firebase" src="img/3c2ec1b62a9d5316.png"></p>
+<h2 is-upgraded>NOTE: Use the arrow keys on your keyboard to navigate through the options as well as the space bar to make a selection, then Enter to proceed.</h2>
+<p>Next, select the Firebase project you want to associate this project directory. Select the <strong>Use an existing project</strong> option:</p>
+<p class="image-container"><img alt="Firebase" src="img/263d23317e498dcf.png"></p>
+<p>Then, go ahead and navigate to your particular project. Select it with the keyboard arrow keys and hit <strong>Enter</strong>:</p>
+<p class="image-container"><img alt="Firebase" src="img/386a04ff0991f6d2.png"></p>
+<p>Next, as the directory that Firebase will use to grab your web-generated files for deployment, set it to be the <strong>build/web</strong> folder - this is the default location where Flutter web publishes your assets ready to be deployed on a web server. You must type the words <strong>build/web</strong> - no errors!</p>
+<p class="image-container"><img alt="Firebase" src="img/8c769b1cf35e7be8.png"></p>
+<p>Next, make sure to type ‘y&#39; in the option to configure your web app as a single-page app - this will help you when it comes to adopting a url strategy for your navigation later on:</p>
+<p class="image-container"><img alt="Firebase" src="img/d0cd35800e062d8e.png"></p>
+<p>Type ‘N&#39; when it comes to setting up automatic builds and deploys with Github:</p>
+<p class="image-container"><img alt="Firebase" src="img/676c6bb73ab1ea04.png"></p>
+<p>After that last option, confirm that you get a message saying <strong>Firebase initialization complete</strong> in the command line, as such:</p>
+<p class="image-container"><img alt="Firebase" src="img/d18c4877a75d48be.png"></p>
+<p>Notice a few files that get generated as a result of initializing Firebase in this project: a file called <strong>.firebaserc</strong> and a <strong>firebase.json</strong>, which are files containing the configuration collected during init, and needed to connect to Firebase and deploy our web app.</p>
+<p>Let&#39;s proceed to the next step, which is the actual deployment.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Hosting your Flutter Web App on Firebase: Deployment" duration="0">
+        <p>Let&#39;s now deploy our newly minted Flutter Web App.</p>
+<p>Make sure you are at the root of the project where the <strong>.firebaserc</strong> and a <strong>firebase.json</strong> are located.</p>
+<h2 is-upgraded>Build your Flutter web app</h2>
+<p>As I&#39;ve said in the past, Flutter for web provides the lowest barrier to entry when it comes to becoming a profilic Flutter developer, because:</p>
+<ul>
+<li><strong>Shared Codebase</strong>: Allows you to share your Dart code between mobile and web apps; web is just another device target for your app</li>
+<li><strong>Reach more users</strong>: Acquire users beyond app stores without limitations from just a click of a URL in a web browser</li>
+<li><strong>Prototype faster</strong>: Showcase your app across multiple devices to quickly iterate and test based on customer feedback</li>
+</ul>
+<p>First, you must build the Flutter web app so it generates web-compatible files out of your Flutter code.</p>
+<p>When running and building apps for the web, you can choose between two different renderers. The two renderers are:</p>
+<ul>
+<li><strong>HTML renderer</strong>: Uses a combination of HTML elements, CSS, Canvas elements, and SVG elements. This renderer has a smaller download size.</li>
+<li><strong>CanvasKit renderer</strong>: This renderer is fully consistent with Flutter mobile and desktop, has faster performance with higher widget density.</li>
+</ul>
+<p>Follow <a href="https://docs.flutter.dev/platform-integration/web/renderers" target="_blank">this link</a> for more info on web renderers for Flutter.</p>
+<p>With that in mind, let&#39;s proceed!</p>
+<p>Run the following command:</p>
+<pre><code language="language-flutter" class="language-flutter">flutter build web --release
+
+</code></pre>
+<p>By not specifying what type of renderer, Flutter picked the default option (auto), which automatically chooses which renderer to use. This option chooses the HTML renderer when the app is running in a mobile browser, and CanvasKit renderer when the app is running in a desktop browser.</p>
+<p>In other circumstances, you can pass either <code>--web-renderer html</code> or <code>--web-renderer canvaskit</code>.</p>
+<p>The above command builds your Flutter web app, and generates a package in your <strong>build/web</strong> folder with web-server compatible files ready to be deployed on any web server.</p>
+<p>Verify that the project has been built for the web by navigating to the <strong>build/web</strong> folder in your project.</p>
+<p>Now, all we need to do is run the following command to deploy your web project to firebase:</p>
+<pre><code language="language-flutter" class="language-flutter">firebase deploy
+
+</code></pre>
+<p>After a little bit, you should get a message confirming that the deployment is complete. The Firebase CLI should generate a Hosting URL, where your web app is deployed. Navigate to that URL and confirm your web page is live and public.</p>
+<p class="image-container"><img alt="Firebase" src="img/220416d4ba06994a.png"></p>
+<p>Hoorayy!!!! We are live!!! Congrats on making this far! Now your personal portfolio web app developed in Flutter is fully available for the world to see - enjoy!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Wrap-up" duration="0">
+        <p>And with that, we&#39;re done with this codelab for this workshop, where we accomplished the following:</p>
+<ul>
+<li>Set up a Firebase Cloud Firestore</li>
+<li>Installing FlutterFire on your Flutter Project</li>
+<li>Retrieve data from your Firebase Cloud Firestore Database</li>
+<li>Consume Firestore data within your Flutter Web app</li>
+<li>Host your Flutter Web app on Firebase Hosting</li>
+</ul>
+<h2 is-upgraded>Please don&#39;t forget to follow me on social media:</h2>
+<ul>
+<li>On Twitter (<a href="https://www.twitter.com/drcoderz" target="_blank">@drcoderz</a>)</li>
+<li>On YouTube (<a href="https://www.youtube.com/channel/UCKsp3r1ERjCpKJtD2n5WtPg" target="_blank">Roman Just Codes</a>)</li>
+<li>On my <a href="https://romanjustcodes.web.app/" target="_blank">Personal Portfolio</a></li>
+<li>On <a href="https://medium.com/@romanejaquez" target="_blank">Medium</a></li>
+<li>On <a href="https://www.linkedin.com/in/roman-jaquez-8941a424/" target="_blank">LinkedIn</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Complete Code" duration="0">
+        <p>The complete code is available on Github by following this <a href="https://github.com/romanejaquez/roman-web-portfolio.git" target="_blank">link</a>.</p>
+<h2 is-upgraded>Happy Coding!!!</h2>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements-tmp/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements-tmp/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements-tmp/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements-tmp/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
